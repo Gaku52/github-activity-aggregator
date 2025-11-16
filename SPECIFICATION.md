@@ -13,6 +13,11 @@
 ### コンセプト
 **"Set it and forget it"** - 一度設定すれば、あとは完全自動
 
+### 実装方針
+**CLI-First Approach** - UIなしのCLIツールとして開発し、段階的に収益化
+
+詳細な収益化戦略は [MONETIZATION_STRATEGY.md](./MONETIZATION_STRATEGY.md) を参照
+
 ---
 
 ## 🎯 主要機能
