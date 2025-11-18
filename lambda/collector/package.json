@@ -1,0 +1,26 @@
+{
+  "name": "collector",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["lambda", "github", "collector"],
+  "author": "Gaku52",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "@supabase/supabase-js": "^2.82.0",
+    "@types/node": "^24.10.1",
+    "dotenv": "^17.2.3",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.158"
+  }
+}
