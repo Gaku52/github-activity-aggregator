@@ -9,15 +9,20 @@
     "test": "node dist/index.js",
     "clean": "rm -rf dist"
   },
-  "keywords": ["lambda", "github", "collector"],
+  "keywords": [
+    "lambda",
+    "github",
+    "collector"
+  ],
   "author": "Gaku52",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@octokit/rest": "^22.0.1",
-    "@supabase/supabase-js": "^2.82.0",
+    "@supabase/supabase-js": "^2.45.4",
     "@types/node": "^24.10.1",
     "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
     "typescript": "^5.9.3"
   },
   "devDependencies": {

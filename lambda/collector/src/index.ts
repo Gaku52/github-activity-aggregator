@@ -12,6 +12,53 @@ import * as dotenv from 'dotenv';
 // ローカルテスト用に.envを読込
 dotenv.config({ path: '../../.env' });
 
+// Supabase Database型定義
+interface Database {
+  public: {
+    Tables: {
+      repositories: {
+        Row: {
+          id: string;
+          name: string;
+          full_name: string;
+          url: string;
+          description: string | null;
+          homepage: string | null;
+          language: string | null;
+          stars: number;
+          forks: number;
+          open_issues: number;
+          is_private: boolean;
+          is_archived: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+          last_push_at: string | null;
+          metadata: any;
+          synced_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['repositories']['Row'], 'id' | 'synced_at' | 'metadata'>;
+      };
+      commits: {
+        Row: {
+          id: string;
+          repo_id: string;
+          sha: string;
+          message: string;
+          author_name: string | null;
+          author_email: string | null;
+          committed_at: string;
+          additions: number;
+          deletions: number;
+          files_changed: number;
+          url: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['commits']['Row'], 'id' | 'created_at'>;
+      };
+    };
+  };
+}
+
 interface CollectorEvent {
   since?: string; // ISO 8601 date (例: '2024-11-11T00:00:00Z')
 }
@@ -84,8 +131,21 @@ export const handler: Handler<CollectorEvent, CollectorResponse> = async (event)
     const octokit = new Octokit({ auth: githubToken });
     console.log('✅ GitHub API初期化完了');
 
-    // Supabase初期化
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Supabase初期化（本番環境用）
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'github-activity-aggregator',
+        },
+      },
+    });
     console.log('✅ Supabase初期化完了');
 
     // 1. 全リポジトリ取得
