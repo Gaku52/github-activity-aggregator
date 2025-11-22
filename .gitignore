@@ -43,3 +43,16 @@ logs/
 # テスト
 coverage/
 .nyc_output/
+
+# 機密情報を含むテストスクリプト（除外）
+test-env-debug.ts
+test-final-verification.ts
+test-headers-detailed.ts
+test-new-db-version.ts
+test-new-rest-api.ts
+test-postgres-direct.ts
+test-supabase-endpoint.ts
+lambda/collector/check-project-api.js
+lambda/collector/create-test-table.js
+lambda/collector/diagnose-supabase.js
+lambda/collector/test-postgres.js
