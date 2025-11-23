@@ -1,0 +1,30 @@
+{
+  "name": "generator",
+  "version": "1.0.0",
+  "description": "GitHub Activity Report Generator Lambda",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "lambda",
+    "github",
+    "report",
+    "generator"
+  ],
+  "author": "Gaku52",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "@types/node": "^24.10.1",
+    "dotenv": "^17.2.3",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.158"
+  }
+}
