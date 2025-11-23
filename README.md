@@ -50,11 +50,21 @@ EventBridge → Lambda (Collector) → Supabase
 
 ## 🚀 ステータス
 
-**現在**: 仕様策定完了、実装前
+**現在**: Phase 2 完了 - Collector Lambda 実装・テスト完了
 
-### 実装予定
+### 完了した実装
 
-Phase 1 から順次実装予定。詳細は [SPECIFICATION.md](./SPECIFICATION.md) のロードマップを参照。
+- ✅ **Phase 1**: Supabase データベース設計・セットアップ
+- ✅ **Phase 2**: GitHub Collector Lambda 実装
+  - 43個のリポジトリ収集成功
+  - コミット履歴の自動保存
+  - ローカルテスト完了
+
+### 次のステップ
+
+- 🔄 **Phase 3**: Report Generator Lambda 実装（進行中）
+- ⏳ **Phase 4**: Publisher Lambda 実装（Notion/Slack連携）
+- ⏳ **Phase 5**: AWS デプロイ
 
 ---
 
@@ -122,4 +132,18 @@ Gaku52
 ---
 
 **作成日**: 2025-11-15
-# 進捗更新 2025-11-19 23:59
+
+---
+
+## 📝 進捗履歴
+
+### 2025-11-23
+- ✅ Collector Lambda のローカルテスト実行成功
+- ✅ GitHub API からリポジトリ43個、コミット15件を収集
+- ✅ Supabase への自動保存確認完了
+- 🎯 Phase 2 完了
+
+### 2025-11-19
+- ✅ Supabase データベース設計完了
+- ✅ REST API 接続確認
+- ✅ 全テーブル・ビュー作成完了
