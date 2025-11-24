@@ -129,6 +129,17 @@ export async function publishToNotion(
 }
 
 /**
+ * 日付を日本語形式に変換 (YYYY-MM-DD → YYYY年MM月DD日)
+ */
+function formatDateJapanese(dateStr: string): string {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
+}
+
+/**
  * Notionブロックを生成
  */
 function buildNotionBlocks(report: ReportData): any[] {
@@ -288,12 +299,13 @@ function buildNotionBlocks(report: ReportData): any[] {
 
     // 日毎の記録
     for (const daily of report.learning_insights.daily_records) {
+      const dateJp = formatDateJapanese(daily.date);
       blocks.push({
         object: 'block',
         type: 'heading_3',
         heading_3: {
           rich_text: [
-            { text: { content: `📅 ${daily.date} (${daily.commits_count}コミット)` } },
+            { text: { content: `📅 ${dateJp} (${daily.commits_count}コミット)` } },
           ],
         },
       });

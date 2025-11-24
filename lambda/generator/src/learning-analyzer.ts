@@ -261,7 +261,7 @@ function extractImplementedFeatures(commits: CommitWithDetails[]): string[] {
 }
 
 /**
- * 日毎のサマリーを生成
+ * 日毎のサマリーを生成（日本語での進捗記録）
  */
 function generateDailySummary(
   commits: CommitWithDetails[],
@@ -269,14 +269,52 @@ function generateDailySummary(
   features: string[]
 ): string {
   const totalLines = commits.reduce((sum, c) => sum + c.additions + c.deletions, 0);
-  const mainTech = technologies[0] || '各種技術';
-  const mainFeature = features[0] || '開発作業';
+  const additions = commits.reduce((sum, c) => sum + c.additions, 0);
+  const deletions = commits.reduce((sum, c) => sum + c.deletions, 0);
+  const filesChanged = commits.reduce((sum, c) => sum + c.files_changed, 0);
 
-  if (commits.length === 1) {
-    return `${mainTech}を使用して${mainFeature}を実施（${totalLines}行変更）`;
+  // 使用技術の列挙
+  const techList = technologies.length > 0
+    ? technologies.slice(0, 3).join('、')
+    : '各種技術';
+
+  // 進捗の種類を判定
+  let progressType = '';
+  const hasFeatures = features.length > 0;
+  const hasChallenges = commits.some(c =>
+    CHALLENGE_KEYWORDS.some(kw => c.message.toLowerCase().includes(kw.toLowerCase()))
+  );
+
+  if (hasFeatures && hasChallenges) {
+    progressType = '新機能の実装と既存機能の改善';
+  } else if (hasFeatures) {
+    progressType = '新機能の実装';
+  } else if (hasChallenges) {
+    progressType = 'バグ修正と改善';
   } else {
-    return `${commits.length}件のコミットで${mainTech}を使用した開発。${mainFeature}など（計${totalLines}行変更）`;
+    progressType = '開発作業';
   }
+
+  // 詳細なサマリー生成
+  const parts = [];
+
+  // 基本情報
+  if (commits.length === 1) {
+    parts.push(`本日は${techList}を使用して${progressType}を実施しました。`);
+  } else {
+    parts.push(`本日は${commits.length}件のコミットを通じて、${techList}を使用した${progressType}を行いました。`);
+  }
+
+  // 主な成果
+  if (features.length > 0) {
+    const mainFeature = features[0].replace(/^(implement|add|create|build|develop|実装|追加|作成|開発)\s*/i, '');
+    parts.push(`主な成果として「${mainFeature}」を達成しました。`);
+  }
+
+  // 変更量の詳細
+  parts.push(`合計${filesChanged}ファイルを変更し、${additions}行の追加と${deletions}行の削除を行いました。`);
+
+  return parts.join(' ');
 }
 
 /**
