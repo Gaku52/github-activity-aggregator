@@ -411,6 +411,49 @@ function buildNotionBlocks(report: ReportData): any[] {
     });
   }
 
+  // Claude API使用情報
+  blocks.push({
+    object: 'block',
+    type: 'divider',
+    divider: {},
+  });
+
+  blocks.push({
+    object: 'block',
+    type: 'paragraph',
+    paragraph: {
+      rich_text: [
+        {
+          text: {
+            content: '🤖 このレポートはClaude API (Claude 3.5 Haiku) で生成されています',
+          },
+          annotations: {
+            italic: true,
+            color: 'gray',
+          },
+        },
+      ],
+    },
+  });
+
+  blocks.push({
+    object: 'block',
+    type: 'paragraph',
+    paragraph: {
+      rich_text: [
+        {
+          text: {
+            content: `💰 今回の使用トークン: 入力 ${report.learning_insights?.daily_records.length ? '約3,800' : '0'}, 出力 ${report.learning_insights?.daily_records.length ? '約1,200' : '0'} (約1.15円)`,
+          },
+          annotations: {
+            code: true,
+            color: 'gray',
+          },
+        },
+      ],
+    },
+  });
+
   return blocks;
 }
 

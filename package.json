@@ -14,6 +14,7 @@
   },
   "scripts": {
     "start": "tsx src/index.ts",
+    "daily": "tsx src/daily-index.ts",
     "build": "tsc"
   }
 }

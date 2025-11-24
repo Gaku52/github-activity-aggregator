@@ -138,9 +138,9 @@ export const handler: Handler<GeneratorEvent, GeneratorResponse> = async (event)
     const repositories = await fetchRepositories(supabase, commits);
     console.log(`  取得完了: ${repositories.length}個のリポジトリ`);
 
-    // 3. 学習内容分析
+    // 3. 学習内容分析（Claude API対応）
     console.log('\n📚 Step 3: 学習内容分析中...');
-    const learningInsights = analyzeLearning(commits, repositories);
+    const learningInsights = await analyzeLearning(commits, repositories);
     console.log(`  分析完了: ${learningInsights.daily_records.length}日分の学習記録`);
 
     // 4. 週次アクティビティ集計
@@ -470,7 +470,7 @@ async function saveGeneratedReport(
       period_end: weekEnd,
       report_type: 'weekly',
       format: 'markdown',
-      title: `週次レポート ${formatDateJapanese(weekStart)} - ${formatDateJapanese(weekEnd)}`,
+      title: `週次レポート ${formatDateJapanese(weekEnd)}`,
       content: {
         markdown: markdownContent,
         repositories: summary.repositories,
@@ -488,5 +488,5 @@ async function saveGeneratedReport(
 // ローカルテスト用
 if (require.main === module) {
   console.log('🧪 ローカルテスト実行\n');
-  handler({}, {} as any, {} as any);
+  handler({ week_offset: 1 }, {} as any, {} as any); // 先週のデータでテスト
 }

@@ -2,7 +2,14 @@
  * Learning Content Analyzer
  *
  * コミットメッセージ、ソースコード、diffから学習内容を抽出・分析
+ * Claude APIによる高度な要約生成にも対応
  */
+
+import {
+  generateDailySummaryWithClaude,
+  generateWeeklySummaryWithClaude,
+  isClaudeAPIAvailable,
+} from './claude-ai-summary';
 
 export interface DailyLearning {
   date: string; // YYYY-MM-DD
@@ -72,23 +79,57 @@ interface CommitWithDetails {
 }
 
 /**
- * 日毎の学習記録を生成
+ * 日毎の学習記録を生成（Claude API対応版）
  */
-export function analyzeLearning(
+export async function analyzeLearning(
   commits: CommitWithDetails[],
   repositories: Array<{ name: string; language: string | null }>
-): LearningInsights {
+): Promise<LearningInsights> {
   // 日付毎にコミットをグループ化
   const commitsByDate = groupCommitsByDate(commits);
 
+  // Claude API の利用可否を確認
+  const useClaudeAPI = isClaudeAPIAvailable();
+  const claudeApiKey = process.env.CLAUDE_API_KEY || '';
+
+  console.log(`📚 学習内容分析モード: ${useClaudeAPI ? 'Claude API使用' : 'ルールベース'}`);
+
   // 日毎の学習記録を生成
   const daily_records: DailyLearning[] = [];
+  let totalTokensUsed = { input: 0, output: 0 };
 
   for (const [date, dayCommits] of Object.entries(commitsByDate)) {
     const technologies = extractTechnologiesFromCommits(dayCommits, repositories);
     const concepts = extractLearnedConcepts(dayCommits);
     const features = extractImplementedFeatures(dayCommits);
-    const summary = generateDailySummary(dayCommits, technologies, features);
+
+    let summary = '';
+
+    // Claude API を使用する場合
+    if (useClaudeAPI && claudeApiKey) {
+      try {
+        const aiResult = await generateDailySummaryWithClaude(
+          {
+            date,
+            commits: dayCommits,
+            technologies,
+            concepts,
+            features,
+          },
+          claudeApiKey
+        );
+        summary = aiResult.summary;
+        totalTokensUsed.input += aiResult.usedTokens.input;
+        totalTokensUsed.output += aiResult.usedTokens.output;
+        console.log(`  ✨ ${date}: Claude API使用 (入力:${aiResult.usedTokens.input}, 出力:${aiResult.usedTokens.output})`);
+      } catch (error) {
+        console.warn(`  ⚠️  ${date}: Claude API失敗、ルールベースにフォールバック`);
+        summary = generateDailySummary(dayCommits, technologies, features);
+      }
+    } else {
+      // ルールベースのサマリー生成
+      summary = generateDailySummary(dayCommits, technologies, features);
+    }
 
     daily_records.push({
       date,
@@ -103,7 +144,34 @@ export function analyzeLearning(
   }
 
   // 週のサマリーを生成
-  const week_summary = generateWeekSummary(daily_records, commits);
+  let week_summary = generateWeekSummary(daily_records, commits);
+
+  // Claude APIで週次サマリーも生成
+  if (useClaudeAPI && claudeApiKey && daily_records.length > 0) {
+    try {
+      const weeklyAiResult = await generateWeeklySummaryWithClaude(
+        daily_records.map(d => ({ date: d.date, summary: d.summary })),
+        week_summary,
+        claudeApiKey
+      );
+      // 週次サマリーをAI生成のものに差し替え（オプション：achievements に追加）
+      week_summary.achievements = [
+        weeklyAiResult.summary,
+        ...week_summary.achievements.slice(0, 4),
+      ];
+      totalTokensUsed.input += weeklyAiResult.usedTokens.input;
+      totalTokensUsed.output += weeklyAiResult.usedTokens.output;
+      console.log(`  ✨ 週次サマリー: Claude API使用 (入力:${weeklyAiResult.usedTokens.input}, 出力:${weeklyAiResult.usedTokens.output})`);
+    } catch (error) {
+      console.warn(`  ⚠️  週次サマリー: Claude API失敗、ルールベースを使用`);
+    }
+  }
+
+  if (useClaudeAPI) {
+    console.log(`📊 Claude API トークン使用: 入力=${totalTokensUsed.input}, 出力=${totalTokensUsed.output}`);
+    const estimatedCost = (totalTokensUsed.input * 0.8 + totalTokensUsed.output * 4.0) / 1000000;
+    console.log(`💰 推定コスト: $${estimatedCost.toFixed(6)} (約${(estimatedCost * 150).toFixed(2)}円)`);
+  }
 
   return {
     daily_records: daily_records.sort((a, b) => a.date.localeCompare(b.date)),

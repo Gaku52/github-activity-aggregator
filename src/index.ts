@@ -24,14 +24,14 @@ async function main() {
     }
 
     // 3. Claude で分析
-    const summary = await analyzeCommits(commits)
+    const analysisResult = await analyzeCommits(commits)
 
     // 4. レポート作成
     const report = {
       week_start: weekAgo.toISOString().split('T')[0],
       week_end: now.toISOString().split('T')[0],
       total_commits: commits.length,
-      summary
+      summary: analysisResult.summary
     }
 
     // 5. Supabase に保存
@@ -51,6 +51,9 @@ async function main() {
     console.log('=== 完了 ===')
     console.log(`所要時間: ${(duration / 1000).toFixed(1)}秒`)
     console.log(`Notion URL: ${notionUrl}`)
+    console.log(`\n💰 Claude API 使用量:`)
+    console.log(`  Total tokens: ${analysisResult.totalTokens.toLocaleString()}`)
+    console.log(`  Cost: $${analysisResult.estimatedCost.toFixed(6)} (約¥${(analysisResult.estimatedCost * 150).toFixed(2)})`)
 
   } catch (error) {
     console.error('\n❌ エラーが発生しました:', error)
