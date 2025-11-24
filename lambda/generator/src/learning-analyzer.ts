@@ -238,6 +238,104 @@ function extractLearnedConcepts(commits: CommitWithDetails[]): string[] {
 }
 
 /**
+ * 英語のコミットメッセージを日本語に翻訳
+ */
+function translateCommitMessage(message: string): string {
+  // 先頭の絵文字やプレフィックスを除去
+  let cleaned = message.replace(/^(feat|fix|docs|style|refactor|test|chore|build|ci|perf)(\(.+?\))?:\s*/i, '');
+  cleaned = cleaned.replace(/^[✨🐛📝💄♻️✅🔧🚀📦🎨⚡️]+\s*/, '');
+
+  // よくある英語フレーズを日本語に変換
+  const translations: Record<string, string> = {
+    'Add ': '追加: ',
+    'Update ': '更新: ',
+    'Fix ': '修正: ',
+    'Remove ': '削除: ',
+    'Implement ': '実装: ',
+    'Create ': '作成: ',
+    'Build ': '構築: ',
+    'Setup ': 'セットアップ: ',
+    'Configure ': '設定: ',
+    'Refactor ': 'リファクタリング: ',
+    'Improve ': '改善: ',
+    'Optimize ': '最適化: ',
+    'Deploy ': 'デプロイ: ',
+    'Integrate ': '統合: ',
+    'Complete ': '完了: ',
+  };
+
+  // 英語フレーズを日本語に置換
+  for (const [eng, jpn] of Object.entries(translations)) {
+    if (cleaned.startsWith(eng)) {
+      cleaned = cleaned.replace(eng, jpn);
+      break;
+    }
+  }
+
+  // 一般的な英単語・フレーズを日本語に変換
+  const wordTranslations: Record<string, string> = {
+    'Pre-implementation checklist': '事前実装チェックリスト',
+    'implementation guides': '実装ガイド',
+    'implementation': '実装',
+    'documentation': 'ドキュメント',
+    'checklist': 'チェックリスト',
+    'requirement': '要件',
+    'requirements': '要件',
+    'guide': 'ガイド',
+    'guides': 'ガイド',
+    'schedule': 'スケジュール',
+    'schedules': 'スケジュール',
+    'all schedules': '全スケジュール',
+    'complete': '完全な',
+    'comprehensive': '包括的な',
+    'supplementary': '補足',
+    'troubleshooting': 'トラブルシューティング',
+    'flow diagrams': 'フロー図',
+    'system architecture': 'システムアーキテクチャ',
+    'design documents': '設計ドキュメント',
+    'security': 'セキュリティ',
+    'operations': '運用',
+    'API spec': 'API仕様',
+    'backup': 'バックアップ',
+    'project setup': 'プロジェクトセットアップ',
+    'initialization': '初期化',
+    'progress': '進捗',
+    'test scripts': 'テストスクリプト',
+    'with': 'を含む',
+    'and': 'と',
+    'for': 'の',
+    'API': 'API',
+    'CLI': 'CLI',
+    'Lambda': 'Lambda',
+    'function': '関数',
+    'Phase': 'フェーズ',
+    'configuration': '設定',
+    'automation': '自動化',
+    'setup': 'セットアップ',
+  };
+
+  // 長いフレーズから順に置換（部分一致を防ぐ）
+  const sortedTranslations = Object.entries(wordTranslations)
+    .sort((a, b) => b[0].length - a[0].length);
+
+  for (const [eng, jpn] of sortedTranslations) {
+    const regex = new RegExp(eng, 'gi');
+    cleaned = cleaned.replace(regex, jpn);
+  }
+
+  // 余分な「の」の連続を修正
+  cleaned = cleaned.replace(/の\s*の/g, 'の');
+
+  // 冠詞などの不要な単語を削除
+  cleaned = cleaned.replace(/\b(with|the|a|an|of)\b/gi, '');
+
+  // 余分なスペースを整理
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  return cleaned;
+}
+
+/**
  * 実装した機能を抽出
  */
 function extractImplementedFeatures(commits: CommitWithDetails[]): string[] {
@@ -252,7 +350,9 @@ function extractImplementedFeatures(commits: CommitWithDetails[]): string[] {
     );
 
     if (isFeature && firstLine.length < 100) {
-      features.push(firstLine);
+      // 日本語に翻訳して追加
+      const translated = translateCommitMessage(firstLine);
+      features.push(translated);
     }
   });
 
