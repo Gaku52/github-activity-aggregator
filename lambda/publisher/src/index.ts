@@ -90,6 +90,7 @@ export const handler: Handler<PublisherEvent, PublisherResponse> = async (event)
       summary: report.summary,
       repositories: report.content?.repositories || [],
       top_commits: report.content?.top_commits || [],
+      learning_insights: report.content?.learning_insights,
       markdown: report.content?.markdown || '',
     };
 

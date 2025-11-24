@@ -96,6 +96,14 @@ interface Commit {
   deletions: number;
   files_changed: number;
   url: string;
+  files_detail?: Array<{
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    changes: number;
+    patch?: string;
+  }>;
 }
 
 /**
@@ -300,6 +308,16 @@ async function fetchCommitsSince(
           ref: commit.sha,
         });
 
+        // ファイル変更の詳細を抽出
+        const files = commitDetail.files?.map(file => ({
+          filename: file.filename,
+          status: file.status, // added, modified, deleted
+          additions: file.additions,
+          deletions: file.deletions,
+          changes: file.changes,
+          patch: file.patch, // diffの内容
+        })) || [];
+
         allCommits.push({
           repo_full_name: repo.full_name,
           sha: commit.sha,
@@ -311,6 +329,7 @@ async function fetchCommitsSince(
           deletions: commitDetail.stats?.deletions || 0,
           files_changed: commitDetail.files?.length || 0,
           url: commit.html_url,
+          files_detail: files, // ファイル変更詳細を追加
         });
       }
 
@@ -362,6 +381,7 @@ async function insertCommits(
         deletions: commit.deletions,
         files_changed: commit.files_changed,
         url: commit.url,
+        metadata: commit.files_detail ? { files: commit.files_detail } : null,
       });
 
     if (error) {

@@ -7,6 +7,7 @@
 import { Handler } from 'aws-lambda';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import { analyzeLearning, LearningInsights } from './learning-analyzer';
 
 // ローカルテスト用に.envを読込
 dotenv.config({ path: '../../.env' });
@@ -32,6 +33,13 @@ interface CommitData {
   deletions: number;
   files_changed: number;
   url: string | null;
+  metadata?: {
+    files?: Array<{
+      filename: string;
+      status: string;
+      patch?: string;
+    }>;
+  };
 }
 
 interface RepositoryData {
@@ -77,6 +85,7 @@ interface ReportContent {
     date: string;
     url: string;
   }>;
+  learning_insights?: LearningInsights;
 }
 
 /**
@@ -129,8 +138,13 @@ export const handler: Handler<GeneratorEvent, GeneratorResponse> = async (event)
     const repositories = await fetchRepositories(supabase, commits);
     console.log(`  取得完了: ${repositories.length}個のリポジトリ`);
 
-    // 3. 週次アクティビティ集計
-    console.log('\n📊 Step 3: 週次アクティビティ集計中...');
+    // 3. 学習内容分析
+    console.log('\n📚 Step 3: 学習内容分析中...');
+    const learningInsights = analyzeLearning(commits, repositories);
+    console.log(`  分析完了: ${learningInsights.daily_records.length}日分の学習記録`);
+
+    // 4. 週次アクティビティ集計
+    console.log('\n📊 Step 4: 週次アクティビティ集計中...');
     const weeklyActivities = aggregateWeeklyActivities(
       commits,
       repositories,
@@ -139,19 +153,19 @@ export const handler: Handler<GeneratorEvent, GeneratorResponse> = async (event)
     );
     console.log(`  集計完了: ${weeklyActivities.length}個のリポジトリ`);
 
-    // 4. weekly_activitiesテーブルに保存
-    console.log('\n💾 Step 4: 週次アクティビティ保存中...');
+    // 5. weekly_activitiesテーブルに保存
+    console.log('\n💾 Step 5: 週次アクティビティ保存中...');
     await saveWeeklyActivities(supabase, weeklyActivities);
     console.log('  保存完了');
 
-    // 5. レポート生成
-    console.log('\n📄 Step 5: レポート生成中...');
-    const reportContent = generateReportContent(commits, repositories, weeklyActivities);
+    // 6. レポート生成
+    console.log('\n📄 Step 6: レポート生成中...');
+    const reportContent = generateReportContent(commits, repositories, weeklyActivities, learningInsights);
     const markdownReport = generateMarkdownReport(reportContent, weekStart, weekEnd);
     console.log('  レポート生成完了');
 
-    // 6. generated_reportsテーブルに保存
-    console.log('\n💾 Step 6: レポート保存中...');
+    // 7. generated_reportsテーブルに保存
+    console.log('\n💾 Step 7: レポート保存中...');
     await saveGeneratedReport(
       supabase,
       weekStart,
@@ -341,7 +355,8 @@ async function saveWeeklyActivities(
 function generateReportContent(
   commits: CommitData[],
   repositories: RepositoryData[],
-  activities: WeeklyActivity[]
+  activities: WeeklyActivity[],
+  learningInsights: LearningInsights
 ): ReportContent {
   const repoMap = new Map(repositories.map(r => [r.id, r]));
 
@@ -377,6 +392,7 @@ function generateReportContent(
         url: c.url || '',
       };
     }),
+    learning_insights: learningInsights,
   };
 }
 
@@ -444,7 +460,12 @@ async function saveGeneratedReport(
       report_type: 'weekly',
       format: 'markdown',
       title: `Weekly Report ${weekStart} - ${weekEnd}`,
-      content: { markdown: markdownContent },
+      content: {
+        markdown: markdownContent,
+        repositories: summary.repositories,
+        top_commits: summary.top_commits,
+        learning_insights: summary.learning_insights,
+      },
       summary: summary.summary,
     });
 

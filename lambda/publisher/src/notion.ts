@@ -11,6 +11,28 @@ export interface NotionConfig {
   databaseId: string;
 }
 
+export interface DailyLearning {
+  date: string;
+  commits_count: number;
+  additions: number;
+  deletions: number;
+  technologies_used: string[];
+  learned_concepts: string[];
+  implemented_features: string[];
+  summary: string;
+}
+
+export interface LearningInsights {
+  daily_records: DailyLearning[];
+  week_summary: {
+    total_commits: number;
+    total_lines: number;
+    main_technologies: string[];
+    key_learnings: string[];
+    achievements: string[];
+  };
+}
+
 export interface ReportData {
   title: string;
   period_start: string;
@@ -38,6 +60,7 @@ export interface ReportData {
     date: string;
     url: string;
   }>;
+  learning_insights?: LearningInsights;
   markdown?: string;
 }
 
@@ -72,33 +95,25 @@ export async function publishToNotion(
             },
           ],
         },
-        // 期間開始日
-        'Period Start': {
+        // 日付（既存プロパティに合わせる）
+        '日付': {
           date: {
             start: report.period_start,
+            end: report.period_end,
           },
         },
-        // 期間終了日
-        'Period End': {
-          date: {
-            start: report.period_end,
+        // カテゴリ（既存プロパティ）
+        'カテゴリ': {
+          multi_select: [
+            { name: 'GitHub Activity' },
+            { name: '開発' },
+          ],
+        },
+        // ステータス（既存プロパティ）
+        'ステータス': {
+          select: {
+            name: '完了',
           },
-        },
-        // コミット数
-        'Commits': {
-          number: report.summary.total_commits,
-        },
-        // 追加行数
-        'Additions': {
-          number: report.summary.total_additions,
-        },
-        // 削除行数
-        'Deletions': {
-          number: report.summary.total_deletions,
-        },
-        // アクティブリポジトリ数
-        'Active Repos': {
-          number: report.summary.active_repos,
         },
       },
       children: buildNotionBlocks(report),
@@ -231,6 +246,121 @@ function buildNotionBlocks(report: ReportData): any[] {
         ],
       },
     });
+  }
+
+  // 📚 日毎の学習記録セクション
+  if (report.learning_insights) {
+    blocks.push({
+      object: 'block',
+      type: 'heading_2',
+      heading_2: {
+        rich_text: [{ text: { content: '📚 日毎の学習記録' } }],
+      },
+    });
+
+    // 週のサマリー
+    const weekSummary = report.learning_insights.week_summary;
+    if (weekSummary.main_technologies.length > 0) {
+      blocks.push({
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [
+            { text: { content: '🛠️ 使用技術: ' }, annotations: { bold: true } },
+            { text: { content: weekSummary.main_technologies.join(', ') } },
+          ],
+        },
+      });
+    }
+
+    if (weekSummary.key_learnings.length > 0) {
+      blocks.push({
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [
+            { text: { content: '💡 学んだこと: ' }, annotations: { bold: true } },
+            { text: { content: weekSummary.key_learnings.join(', ') } },
+          ],
+        },
+      });
+    }
+
+    // 日毎の記録
+    for (const daily of report.learning_insights.daily_records) {
+      blocks.push({
+        object: 'block',
+        type: 'heading_3',
+        heading_3: {
+          rich_text: [
+            { text: { content: `📅 ${daily.date} (${daily.commits_count}コミット)` } },
+          ],
+        },
+      });
+
+      blocks.push({
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [{ text: { content: daily.summary } }],
+        },
+      });
+
+      // 使用技術
+      if (daily.technologies_used.length > 0) {
+        blocks.push({
+          object: 'block',
+          type: 'bulleted_list_item',
+          bulleted_list_item: {
+            rich_text: [
+              { text: { content: '使用技術: ' } },
+              { text: { content: daily.technologies_used.join(', ') }, annotations: { bold: true } },
+            ],
+          },
+        });
+      }
+
+      // 学んだ概念
+      if (daily.learned_concepts.length > 0) {
+        blocks.push({
+          object: 'block',
+          type: 'bulleted_list_item',
+          bulleted_list_item: {
+            rich_text: [
+              { text: { content: '学んだ概念: ' } },
+              { text: { content: daily.learned_concepts.join(', ') } },
+            ],
+          },
+        });
+      }
+
+      // 実装した機能
+      if (daily.implemented_features.length > 0) {
+        for (const feature of daily.implemented_features.slice(0, 3)) {
+          blocks.push({
+            object: 'block',
+            type: 'bulleted_list_item',
+            bulleted_list_item: {
+              rich_text: [
+                { text: { content: '✅ ' } },
+                { text: { content: feature } },
+              ],
+            },
+          });
+        }
+      }
+
+      // 変更量
+      blocks.push({
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [
+            { text: { content: `+${daily.additions} / -${daily.deletions} 行` }, annotations: { color: 'gray' } },
+          ],
+        },
+      });
+    }
   }
 
   // Top コミット
