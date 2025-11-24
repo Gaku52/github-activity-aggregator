@@ -203,6 +203,17 @@ export const handler: Handler<GeneratorEvent, GeneratorResponse> = async (event)
 };
 
 /**
+ * 日付を日本語形式に変換 (YYYY-MM-DD → YYYY年MM月DD日)
+ */
+function formatDateJapanese(dateStr: string): string {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
+}
+
+/**
  * 週の範囲を取得（月曜始まり）
  */
 function getWeekRange(weekOffset: number = 0): { weekStart: string; weekEnd: string } {
@@ -406,9 +417,9 @@ function generateMarkdownReport(
 ): string {
   const { summary, repositories, top_commits } = content;
 
-  return `# GitHub Weekly Activity Report
+  return `# GitHub 週次活動レポート
 
-**期間**: ${weekStart} 〜 ${weekEnd}
+**期間**: ${formatDateJapanese(weekStart)} 〜 ${formatDateJapanese(weekEnd)}
 
 ## 📊 サマリー
 
@@ -459,7 +470,7 @@ async function saveGeneratedReport(
       period_end: weekEnd,
       report_type: 'weekly',
       format: 'markdown',
-      title: `Weekly Report ${weekStart} - ${weekEnd}`,
+      title: `週次レポート ${formatDateJapanese(weekStart)} - ${formatDateJapanese(weekEnd)}`,
       content: {
         markdown: markdownContent,
         repositories: summary.repositories,
