@@ -28,23 +28,25 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // 1. 期間設定（今日1日分）
+    // 1. 期間設定（前日1日分）
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    // 前日のデータを取得（実行日の前日00:00〜23:59）
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+    const targetDate = yesterday
 
-    console.log(`日付: ${today.toLocaleDateString('ja-JP')}`)
+    console.log(`日付: ${targetDate.toLocaleDateString('ja-JP')}（前日分）`)
 
     // 2. GitHub データ取得
-    const { commits } = await fetchWeeklyActivity(today, tomorrow)
+    const { commits } = await fetchWeeklyActivity(targetDate, today)
 
     if (commits.length === 0) {
       console.log('今日のコミットはありませんでした。')
       return {
         statusCode: 200,
         body: JSON.stringify({
-          message: 'No commits today',
-          date: today.toISOString().split('T')[0]
+          message: 'No commits for yesterday',
+          date: targetDate.toISOString().split('T')[0]
         })
       }
     }
@@ -67,7 +69,7 @@ export const handler: Handler = async (event, context) => {
 
     // 5. レポート作成
     const report = {
-      date: today.toISOString().split('T')[0],
+      date: targetDate.toISOString().split('T')[0],
       total_commits: commits.length,
       summary: analysisResult.summary,
       input_tokens: analysisResult.inputTokens,
