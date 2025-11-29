@@ -28,24 +28,23 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // 1. 期間設定（前日1日分）
+    // 1. 期間設定（本日1日分）
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    // 前日のデータを取得（実行日の前日00:00〜23:59）
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-    const targetDate = yesterday
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    const targetDate = today
 
-    console.log(`日付: ${targetDate.toLocaleDateString('ja-JP')}（前日分）`)
+    console.log(`日付: ${targetDate.toLocaleDateString('ja-JP')}（本日分）`)
 
     // 2. GitHub データ取得
-    const { commits } = await fetchWeeklyActivity(targetDate, today)
+    const { commits } = await fetchWeeklyActivity(targetDate, tomorrow)
 
     if (commits.length === 0) {
-      console.log('今日のコミットはありませんでした。')
+      console.log('本日のコミットはありませんでした。')
       return {
         statusCode: 200,
         body: JSON.stringify({
-          message: 'No commits for yesterday',
+          message: 'No commits for today',
           date: targetDate.toISOString().split('T')[0]
         })
       }

@@ -14,13 +14,13 @@ async function main() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
 
-    console.log(`日付: ${today.toLocaleDateString('ja-JP')}\n`)
+    console.log(`日付: ${today.toLocaleDateString('ja-JP')}（本日分）\n`)
 
     // 2. GitHub データ取得
     const { repos, commits } = await fetchWeeklyActivity(today, tomorrow)
 
     if (commits.length === 0) {
-      console.log('今日のコミットはありませんでした。')
+      console.log('本日のコミットはありませんでした。')
       return
     }
 
