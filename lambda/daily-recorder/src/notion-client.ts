@@ -90,9 +90,11 @@ export async function postToNotion(
   return { url: data.url }
 }
 
-function getDailyPageTitle(date: string): string {
-  // date形式: "2025-11-24" -> "2025-11-24 日次記録"
-  return `${date} 日次記録`
+function getMonthlyPageTitle(date: string): string {
+  // date形式: "2025-11-24" -> "2025-11 日次記録"
+  // 年月を抽出して月別ページタイトルを生成
+  const [year, month] = date.split('-')
+  return `${year}-${month} 日次記録`
 }
 
 async function findDailyRecordPage(pageTitle: string): Promise<string | null> {
@@ -305,25 +307,21 @@ export async function postDailyToNotion(
 ): Promise<{ url: string }> {
   console.log('📤 Notion に投稿中...')
 
-  // 日別のページタイトルを生成
-  const pageTitle = getDailyPageTitle(report.date)
+  // 月別のページタイトルを生成（年月が変わると自動的に新しいページになる）
+  const pageTitle = getMonthlyPageTitle(report.date)
 
-  // 既存の日別ページを検索
+  // 既存の月別ページを検索
   let pageId = await findDailyRecordPage(pageTitle)
   let pageUrl: string
 
   if (!pageId) {
-    // ページがなければ作成
-    console.log(`  新しい日別ページを作成中: ${pageTitle}`)
+    // ページがなければ作成（新しい月の最初の記録）
+    console.log(`  新しい月別ページを作成中: ${pageTitle}`)
     const result = await createDailyRecordPage(pageTitle, report)
     pageId = result.id
     pageUrl = result.url
-
-    // ページに内容を追記
-    await appendToPage(pageId, report)
   } else {
-    // 既存ページがあれば、URLを取得して終了（重複投稿を防ぐ）
-    console.log(`  既存のページを発見: ${pageTitle}`)
+    // 既存ページのURLを取得
     const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
       method: 'GET',
       headers: {
@@ -333,8 +331,13 @@ export async function postDailyToNotion(
     })
     const data = await response.json() as any
     pageUrl = data.url
-    console.log(`  ⚠️  既に記録済みのためスキップ`)
+
+    // プロパティを最新の日付に更新
+    await updatePageProperties(pageId, report)
   }
+
+  // ページに本日の記録を追記
+  await appendToPage(pageId, report)
 
   console.log(`  ✓ 投稿完了: ${pageUrl}\n`)
 
