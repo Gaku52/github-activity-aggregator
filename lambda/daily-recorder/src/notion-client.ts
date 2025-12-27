@@ -227,6 +227,8 @@ async function updatePageProperties(pageId: string, report: DailyNotionReport): 
 }
 
 async function appendToPage(pageId: string, report: DailyNotionReport): Promise<void> {
+  console.log(`  📝 ページに追記中: ${report.date}`)
+
   // summary を箇条書きに分割
   const summaryLines = report.summary
     .split('\n')
@@ -298,8 +300,11 @@ async function appendToPage(pageId: string, report: DailyNotionReport): Promise<
 
   if (!response.ok) {
     const error = await response.json()
+    console.error(`  ❌ Notion追記エラー:`, error)
     throw new Error(`Notion append error: ${JSON.stringify(error)}`)
   }
+
+  console.log(`  ✅ ${report.date}の記録を追加しました`)
 }
 
 export async function postDailyToNotion(

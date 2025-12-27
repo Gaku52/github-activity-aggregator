@@ -28,13 +28,26 @@ export const handler: Handler = async (event, context) => {
       }
     }
 
-    // 1. 期間設定（本日1日分）
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
-    const targetDate = today
-
-    console.log(`日付: ${targetDate.toLocaleDateString('ja-JP')}（本日分）`)
+    // 1. 期間設定（本日1日分、またはeventで指定された日付）
+    let targetDate: Date
+    let targetDateString: string
+    if (event.date) {
+      // eventで日付が指定された場合（ローカル時間で解釈）
+      targetDate = new Date(event.date + 'T00:00:00')
+      targetDateString = event.date  // report.dateには元の文字列をそのまま使用
+      console.log(`日付: ${event.date}（指定日）`)
+    } else {
+      // 指定がない場合は本日
+      const now = new Date()
+      targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      // 日本時間でYYYY-MM-DD形式を取得
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      targetDateString = `${year}-${month}-${day}`
+      console.log(`日付: ${targetDate.toLocaleDateString('ja-JP')}（本日分）`)
+    }
+    const tomorrow = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000)
 
     // 2. GitHub データ取得
     const { commits } = await fetchWeeklyActivity(targetDate, tomorrow)
@@ -68,7 +81,7 @@ export const handler: Handler = async (event, context) => {
 
     // 5. レポート作成
     const report = {
-      date: targetDate.toISOString().split('T')[0],
+      date: targetDateString,
       total_commits: commits.length,
       summary: analysisResult.summary,
       input_tokens: analysisResult.inputTokens,

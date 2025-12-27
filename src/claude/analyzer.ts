@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { Commit } from '../github/client'
+import { trackClaudeUsage, deductCreditBalance } from '../cost/tracker'
 
 export interface AnalysisResult {
   summary: string
@@ -82,6 +83,27 @@ ${commitList}
   console.log(`    - Total tokens: ${totalTokens.toLocaleString()}`)
   console.log(`    - Estimated cost: $${estimatedCost.toFixed(6)} (¥${(estimatedCost * 150).toFixed(2)})`)
   console.log(`    - Categories: ${categories.join(', ')}\n`)
+
+  // コスト追跡をデータベースに記録
+  try {
+    await trackClaudeUsage({
+      requestId: message.id,
+      modelId: 'claude-3-5-haiku-20241022',
+      inputTokens,
+      outputTokens,
+      inputCost: (inputTokens / 1_000_000) * HAIKU_INPUT_COST_PER_1M,
+      outputCost: (outputTokens / 1_000_000) * HAIKU_OUTPUT_COST_PER_1M,
+      totalCost: estimatedCost,
+      operationType: 'analyze_commits',
+      metadata: { commitCount: commits.length, categories },
+    })
+
+    // クレジット残高から差し引く
+    await deductCreditBalance(estimatedCost)
+  } catch (error) {
+    console.error('[Analyzer] Failed to track cost:', error)
+    // エラーでも分析結果は返す
+  }
 
   return {
     summary,

@@ -61,6 +61,7 @@ interface Database {
 
 interface CollectorEvent {
   since?: string; // ISO 8601 date (例: '2024-11-11T00:00:00Z')
+  until?: string; // ISO 8601 date (例: '2024-11-12T00:00:00Z')
 }
 
 interface CollectorResponse {
@@ -133,7 +134,8 @@ export const handler: Handler<CollectorEvent, CollectorResponse> = async (event)
 
     // 期間設定（デフォルト: 先週）
     const since = event.since || getLastWeekDate();
-    console.log(`📅 収集期間: ${since} 〜 現在`);
+    const until = event.until;
+    console.log(`📅 収集期間: ${since} 〜 ${until || '現在'}`);
 
     // GitHub API初期化
     const octokit = new Octokit({ auth: githubToken });
@@ -168,7 +170,7 @@ export const handler: Handler<CollectorEvent, CollectorResponse> = async (event)
 
     // 3. 各リポジトリのコミット取得
     console.log(`\n📝 Step 3: コミット取得中（${since}以降）...`);
-    const commits = await fetchCommitsSince(octokit, githubUsername, repositories, since);
+    const commits = await fetchCommitsSince(octokit, githubUsername, repositories, since, until);
     console.log(`  取得完了: ${commits.length}個のコミット`);
 
     // 4. コミット情報を保存
@@ -277,7 +279,8 @@ async function fetchCommitsSince(
   octokit: Octokit,
   username: string,
   repositories: Repository[],
-  since: string
+  since: string,
+  until?: string
 ): Promise<Commit[]> {
   const allCommits: Commit[] = [];
 
@@ -295,6 +298,7 @@ async function fetchCommitsSince(
         owner,
         repo: repoName,
         since,
+        until,
         per_page: 100,
       });
 

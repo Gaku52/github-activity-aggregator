@@ -4,7 +4,9 @@
     "@notionhq/client": "^5.4.0",
     "@octokit/rest": "^22.0.1",
     "@supabase/supabase-js": "^2.82.0",
+    "@types/nodemailer": "^7.0.4",
     "dotenv": "^17.2.3",
+    "nodemailer": "^7.0.12",
     "pg": "^8.16.3"
   },
   "devDependencies": {
@@ -15,6 +17,10 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "daily": "tsx src/daily-index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "cost:report": "tsx src/cost-report.ts",
+    "cost:daily": "tsx src/cost-report.ts daily",
+    "cost:weekly": "tsx src/cost-report.ts weekly",
+    "cost:monthly": "tsx src/cost-report.ts monthly"
   }
 }

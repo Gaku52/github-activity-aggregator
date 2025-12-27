@@ -5,6 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { trackClaudeUsageInLambda } from './cost-tracker-lambda';
 
 export interface CommitSummaryInput {
   date: string;
@@ -64,6 +65,18 @@ export async function generateDailySummaryWithClaude(
     const summary = message.content[0].type === 'text'
       ? message.content[0].text
       : '';
+
+    // コスト追跡（エラーでも処理は続行）
+    try {
+      await trackClaudeUsageInLambda(
+        message.id,
+        message.usage.input_tokens,
+        message.usage.output_tokens,
+        'daily_summary'
+      );
+    } catch (trackError) {
+      console.error('Cost tracking failed:', trackError);
+    }
 
     return {
       summary: summary.trim(),
@@ -223,6 +236,18 @@ ${weekSummary.achievements.slice(0, 5).join('\n')}
     const summary = message.content[0].type === 'text'
       ? message.content[0].text
       : '';
+
+    // コスト追跡（エラーでも処理は続行）
+    try {
+      await trackClaudeUsageInLambda(
+        message.id,
+        message.usage.input_tokens,
+        message.usage.output_tokens,
+        'weekly_summary'
+      );
+    } catch (trackError) {
+      console.error('Cost tracking failed:', trackError);
+    }
 
     return {
       summary: summary.trim(),
